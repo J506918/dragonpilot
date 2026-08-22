@@ -161,11 +161,18 @@ common_flags += [f"-DHEALTH_PACKET_VERSION=0x{hh:08X}U", f"-DCAN_PACKET_VERSION_
                  f"-DJUNGLE_HEALTH_PACKET_VERSION=0x{jh:08X}U"]
 
 # panda fw
-build_project("panda_h7", base_project_h7, "./board/main.c", [])
+# CANFD is required: can.h sizes CANPacket_t.data and canfd_fifo.data_word with
+# CANPACKET_DATA_SIZE_MAX (8U without the define, 64U with it). Without this flag
+# the firmware stack-smashes on any CAN FD frame longer than 8 bytes (e.g. 11th
+# gen Accord) and the panda dies on SPI -> "NO PANDA". The can.h file itself is
+# hash-pinned (0xD2454760) for the v0.10.3 DOS firmware compatibility, so the
+# fix must come from the build flag, not from editing can.h.
+build_project("panda_h7", base_project_h7, "./board/main.c", ["-DCANFD"])
 
 # panda jungle fw
 flags = [
   "-DPANDA_JUNGLE",
+  "-DCANFD",
 ]
 build_project("panda_jungle_h7", base_project_h7, "./board/jungle/main.c", flags)
 
